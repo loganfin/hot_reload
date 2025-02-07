@@ -2,13 +2,14 @@
 // building with Release.
 #include "game/game.hpp"
 
+#include <atomic>
 #include <memory>
 
 int main()
 {
-    auto game = std::unique_ptr<Game, void (*)(Game*)>(
-        game::make_game(), game::destroy_game
-    );
+    std::atomic<bool> game_should_run{true};
 
-    game->run();
+    auto game = DerivedGame{};
+
+    game.run(game_should_run);
 }

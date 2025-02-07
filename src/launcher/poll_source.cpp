@@ -44,6 +44,9 @@ void poll_source()
         // Should we move the file first? Would that take too long as the game
         // binary increases in size?
 
+        // Sometimes I get segfaults when seemingly simple things are changed.
+        // Can anything be done?
+
         // I don't know how stuttery it will be once there's graphics involved.
         // Maybe we could double-buffer the game libraries, swapping them once
         // the new one is fully loaded.
@@ -51,6 +54,7 @@ void poll_source()
         // Recompile. Is there a more portable way to do this?
         if (system("cmake --build build -t game") != 0) {
             std::cerr << "Compile failed\n";
+            // Close the game thread for now.
             continue;
         }
 
@@ -140,11 +144,13 @@ void load_library()
 
         game_thread_running.store(true);
 
-        while (game_thread_should_run.load()) {
-            // print_hello(thread_since_start);
-            game->run();
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+        game->run(game_thread_should_run);
+
+        // while (game_thread_should_run.load()) {
+        //     // print_hello(thread_since_start);
+        //     game->run();
+        //     std::this_thread::sleep_for(std::chrono::seconds(1));
+        // }
 
         std::cout << "thread exiting...\n";
         game_thread_running.store(false);
