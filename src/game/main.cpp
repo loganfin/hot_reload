@@ -9,7 +9,9 @@ int main()
 {
     std::atomic<bool> game_should_run{true};
 
-    auto game = DerivedGame{};
+    auto game_data = std::make_unique<GameData>();
+
+    auto game = DerivedGame{game_data.get()};
 
     game.run(game_should_run);
 }

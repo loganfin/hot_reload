@@ -1,7 +1,9 @@
 #include "game/game.hpp"
 
+#include <cstdlib>
 #include <iostream>
 #include <thread>
+#include <time.h>
 
 void Ball::update()
 {
@@ -10,13 +12,13 @@ void Ball::update()
         if (position.x < g_canvas_size_x - velocity.x) {
             position.x += velocity.x;
         } else {
-            velocity.x *= -1;
+            velocity.x = bounce_off_wall(velocity.x);
         }
     } else {
         if (position.x > 0 - velocity.x - 1) {
             position.x += velocity.x;
         } else {
-            velocity.x *= -1;
+            velocity.x = bounce_off_wall(velocity.x);
         }
     }
 
@@ -24,19 +26,30 @@ void Ball::update()
         if (position.y < g_canvas_size_y - velocity.y) {
             position.y += velocity.y;
         } else {
-            velocity.y *= -1;
+            velocity.y = bounce_off_wall(velocity.y);
         }
     } else {
         if (position.y > 0 - velocity.y - 1) {
             position.y += velocity.y;
         } else {
-            velocity.y *= -1;
+            velocity.y = bounce_off_wall(velocity.y);
         }
     }
 }
 
+int32_t Ball::bounce_off_wall(int32_t vel_component)
+{
+    // You can mess around in here to change bounce behavior at run time
+    int32_t ret_val = (vel_component * -1);
+    // if (ret_val == 0) {
+    //     return vel_component * -1;
+    // }
+    return ret_val;
+}
+
 Game::Game()
 {
+    srand(time(nullptr));
     std::cout << "Game constructed\n";
 }
 
@@ -45,10 +58,12 @@ Game::~Game()
     std::cout << "Game destroyed\n";
 }
 
+DerivedGame::DerivedGame(GameData* game_data) : data_{game_data} {}
+
 void DerivedGame::run(std::atomic<bool>& game_should_run)
 {
     while (game_should_run.load()) {
-        ball.update();
+        data_->ball.update();
 
         draw();
 
@@ -80,7 +95,9 @@ void DerivedGame::draw() const
         // Left side bar
         std::cout << "|";
         for (int column = 0; column < g_canvas_size_x; column++) {
-            if (ball.position.x == column && ball.position.y == row) {
+            if (data_->ball.position.x == column &&
+                data_->ball.position.y == row) {
+                // Try changing the character used for the ball at runtime
                 std::cout << "🔴";
             } else if (column == g_canvas_size_x - 1) {
                 std::cout << "";
@@ -103,11 +120,15 @@ void DerivedGame::draw() const
         }
     }
     std::cout << "\n";
+    std::cout << "Current velocity: (" << data_->ball.velocity.x << ", "
+              << data_->ball.velocity.y << ")\n";
+    std::cout << "Current position: (" << data_->ball.position.x << ", "
+              << data_->ball.position.y << ")\n";
 }
 
-Game* make_game()
+Game* make_game(GameData* game_data)
 {
-    return new DerivedGame{};
+    return new DerivedGame{game_data};
 }
 
 void destroy_game(Game* game)

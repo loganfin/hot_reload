@@ -1,4 +1,5 @@
 #include "launcher/poll_source.hpp"
+
 #include "game/game.hpp"
 
 #include <atomic>
@@ -17,6 +18,8 @@ auto game_thread_running = std::atomic<bool>{false};
 auto game_thread_should_run = std::atomic<bool>{true};
 // This signals the poll thread that the game thread has been loaded
 auto poll_thread_should_run = std::atomic<bool>{true};
+
+auto game_data = std::make_unique<GameData>();
 
 // These would ideally be passed in from CMake as macros
 constexpr auto source_dir = "./src/game";
@@ -119,7 +122,7 @@ void load_library()
     }
 
     auto* make_game =
-        reinterpret_cast<Game* (*)()>(dlsym(game_handle, "make_game"));
+        reinterpret_cast<Game* (*)(GameData*)>(dlsym(game_handle, "make_game"));
     auto* destroy_game =
         reinterpret_cast<void (*)(Game*)>(dlsym(game_handle, "destroy_game"));
 
@@ -138,9 +141,11 @@ void load_library()
 
     game_thread_should_run.store(true);
 
-    std::thread{[make_game, destroy_game]() {
-        auto game =
-            std::unique_ptr<Game, void (*)(Game*)>(make_game(), destroy_game);
+    std::thread{
+        [make_game, destroy_game](GameData* game_data) {
+        auto game = std::unique_ptr<Game, void (*)(Game*)>(
+            make_game(game_data), destroy_game
+        );
 
         game_thread_running.store(true);
 
@@ -154,7 +159,10 @@ void load_library()
 
         std::cout << "thread exiting...\n";
         game_thread_running.store(false);
-    }}.detach();
+        },
+        game_data.get()
+    }
+        .detach();
 }
 
 } // namespace

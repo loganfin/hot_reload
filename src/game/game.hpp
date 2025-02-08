@@ -2,18 +2,17 @@
 
 #include <atomic>
 
-constexpr uint8_t g_canvas_size_x = 68;
-constexpr uint8_t g_canvas_size_y = 30;
+constexpr uint32_t g_canvas_size_x = 69;
+constexpr uint32_t g_canvas_size_y = 25;
 
-// Currently no way to change the magnitude of the components.
 struct Vector {
-    int8_t x = 2;
-    int8_t y = 1;
+    int32_t x = 2;
+    int32_t y = 1;
 };
 
 struct Position {
-    uint8_t x = 0;
-    uint8_t y = 0;
+    uint32_t x = 0;
+    uint32_t y = 0;
 };
 
 struct Ball {
@@ -21,6 +20,7 @@ struct Ball {
     Position position;
 
     void update();
+    int32_t bounce_off_wall(int32_t vel_component);
 };
 
 class Game {
@@ -30,15 +30,21 @@ public:
     virtual void run(std::atomic<bool>& game_should_run) = 0;
 };
 
+struct GameData {
+    Ball ball;
+};
+
 class DerivedGame : public Game {
 public:
+    DerivedGame(GameData* data);
+
     void run(std::atomic<bool>& game_should_run) override;
 
     void draw() const;
 
 private:
-    Ball ball;
+    GameData* data_ = nullptr;
 };
 
-extern "C" Game* make_game();
+extern "C" Game* make_game(GameData* game_data);
 extern "C" void destroy_game(Game* game);
